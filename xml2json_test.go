@@ -7,13 +7,37 @@ import (
 	"testing"
 )
 
+// encoding/json
+type CountriesResponse struct {
+	Countries []Country `json:"countries"`
+}
+
+type Country struct {
+	Code        string `json:"code"`
+	Description string `json:"description"`
+}
+
+// encoding/xml
 type GetCountriesAvailable struct {
-	CountryCode []CountryCode `xml:"Body>GetCountriesAvailableResponse>GetCountriesAvailableResult>CountryCode" json:"countries"`
+	CountryCode []CountryCode `xml:"Body>GetCountriesAvailableResponse>GetCountriesAvailableResult>CountryCode"`
 }
 
 type CountryCode struct {
-	Code        string `xml:"Code" json:"code"`
-	Description string `xml:"Description" json:"description"`
+	Code        string `xml:"Code"`
+	Description string `xml:"Description"`
+}
+
+func (g GetCountriesAvailable) ToJSON() CountriesResponse {
+	countries := make([]Country, len(g.CountryCode))
+	for index := range g.CountryCode {
+		countries[index] = Country{
+			Code:        g.CountryCode[index].Code,
+			Description: g.CountryCode[index].Description,
+		}
+	}
+	return CountriesResponse{
+		Countries: countries,
+	}
 }
 
 func Test_ConvertXML_Input_XML_Should_Be_Struct(t *testing.T) {
@@ -52,7 +76,8 @@ func Test_ToJSON_Should_Be_JSON(t *testing.T) {
 			CountryCode{"UnitedStates", "United States"},
 		},
 	}
-	actual, _ := json.Marshal(getCountriesAvailable)
+	countriesResponse := getCountriesAvailable.ToJSON()
+	actual, _ := json.Marshal(countriesResponse)
 	if expected != string(actual) {
 		t.Errorf("expected \n%s but it got \n%s", expected, actual)
 	}
